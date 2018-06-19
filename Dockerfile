@@ -13,6 +13,7 @@ RUN apk add --no-cache \
 
 # Ensure we have the libraries - docker will cache these between builds
 RUN go get -v \
+      github.com/coreos/bbolt/... \
       github.com/gorilla/mux \
       github.com/peter-mount/golib/kernel \
       github.com/peter-mount/golib/rest \
