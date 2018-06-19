@@ -1,7 +1,8 @@
 package status
 
 import (
-  "github.com/peter-mount/status-monitor/status/bolt"
+  "github.com/peter-mount/golib/kernel/bolt"
+  "log"
   "time"
 )
 
@@ -36,6 +37,17 @@ type IncidentMessage struct {
 // it on the Status page
 func (s *Status ) UpdateIncident( i *IncidentMessage ) error {
   return s.bolt.Update( func( tx *bolt.Tx ) error {
+    bucket, err := tx.CreateBucketIfNotExists( INCIDENT_BUCKET )
+    if err != nil {
+      return err
+    }
+
+    // Lookup the incident name
+    incident := bucket.Get( i.Name )
+    if incident == nil {
+      log.Printf( "New incident: %s", i.Name )
+    }
+
     return nil
   } )
 }
