@@ -13,7 +13,7 @@ type Incident struct {
   Name        string            `json:"name"`
   Created     time.Time         `json:"createdAt"`
   Updated     time.Time         `json:"updatedAt"`
-  updates   []IncidentUpdate    `json:"incidentUpdates"`
+  Updates   []IncidentUpdate    `json:"incidentUpdates"`
 }
 
 type IncidentUpdate struct {
@@ -27,10 +27,11 @@ type IncidentUpdate struct {
 
 // An internal incident message
 type IncidentMessage struct {
-  Name    string
-  Title   string
-  Status  string
-  Message string
+  //todo: Name/Title may need switching
+  Name    string  `json:"-"`
+  Title   string  `json:"name,omitempty"`
+  Status  string  `json:"status"`
+  Message string  `json:"message"`
 }
 
 // UpdateIncident updates our copy of an incident and either creates or updates
@@ -42,10 +43,42 @@ func (s *Status ) UpdateIncident( i *IncidentMessage ) error {
       return err
     }
 
+    response := &Incident{}
+
     // Lookup the incident name
-    incident := bucket.Get( i.Name )
-    if incident == nil {
+    incident := &Incident{}
+    if bucket.GetJSON( i.Name, incident ) {
+      log.Printf( "Found incident: %s - %s", incident.Id, i.Name )
+
+      // Update the status, so no Title
+      i.Title = ""
+
+      ok, err := s.patch( "/api/v0/incidents/" + incident.Id, i, response )
+      if err != nil {
+        return err
+      }
+      if !ok {
+        log.Println( "No response" )
+        return nil
+      }
+    } else {
       log.Printf( "New incident: %s", i.Name )
+
+      ok, err := s.post( "/api/v0/incidents", i, response )
+      if err != nil {
+        return err
+      }
+      if !ok {
+        log.Println( "No response" )
+        return nil
+      }
+    }
+
+    log.Printf( "Got response: %v", response )
+
+    err = bucket.PutJSON( i.Name, response )
+    if err != nil {
+      return err
     }
 
     return nil

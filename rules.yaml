@@ -1,0 +1,59 @@
+# Incident reporting rules
+
+# The valid statuses, defined by lambstatus
+componentStatus:
+  ok: "Operational"
+  maintenance: "Under Maintenance"
+  degraded: "Degraded Performance"
+  partial: "Partial Outage"
+  outage: "Major Outage"
+
+# lambStatuses
+lambStatus:
+  resolved: Resolved
+  identified: Identified
+  investigating: Investigating
+  monitoring: Monitoring
+
+# Default Grafana state to status
+grafanaState:
+  ok: resolved
+  paused: investigating
+  alerting: monitoring
+  pending: monitoring
+  no_data: monitoring
+
+# Components to add/delete when incidents are filed
+components:
+  status:
+    # Component name
+    name: Status
+    # Optional description
+    #description: description
+    # Default status
+    status: ok
+    # If true then remove if no active incidents
+    delete: true
+    # Delay after last active incident is cleared to delete the component
+    deleteDelay: 1m
+
+rules:
+  "Load Peaking":
+    # Optional component to show when active
+    component: status
+    # Status of the component
+    componentStatus: degraded
+    # Overrides for mapping grafana to lambStatus
+    #ok: resolved
+    #paused: investigating
+    #alerting: monitoring
+    #pending: monitoring
+    #no_data: monitoring
+
+    # If true then if the incident has been resolved don't reuse it after this
+    # delay. Note closeDelay takes precendence here
+    #closeAfter: 1h
+
+    # If true then if the incident has been resolved don't reuse it if the
+    # last incident was before the current day - default is true
+    #closeDay: true
