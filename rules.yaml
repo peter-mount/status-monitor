@@ -41,19 +41,27 @@ rules:
   "Load Peaking":
     # Optional component to show when active
     component: status
-    # Status of the component
-    componentStatus: degraded
-    # Overrides for mapping grafana to lambStatus
-    #ok: resolved
-    #paused: investigating
-    #alerting: monitoring
-    #pending: monitoring
-    #no_data: monitoring
-
     # If true then if the incident has been resolved don't reuse it after this
     # delay. Note closeDelay takes precendence here
     #closeAfter: 1h
-
-    # If true then if the incident has been resolved don't reuse it if the
-    # last incident was before the current day - default is true
-    #closeDay: true
+    rule:
+      - # Status of the component
+        componentStatus: degraded
+        # Overrides for mapping grafana to lambStatus
+        #status:
+          #ok: resolved
+          #paused: investigating
+          #alerting: monitoring
+          #pending: monitoring
+          #no_data: monitoring
+        # Hours in day rule applies. If from is > to then it crosses midnight
+        #from: 4
+        #to: 2
+        # Filters against the value or time of day (hours)
+        #filter:
+        #  from: 4
+        #  to: 2
+        #  min: 0
+        #  max: 10
+        #  equal: 0
+        #  notequal: 0
