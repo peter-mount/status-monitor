@@ -34,6 +34,59 @@ type IncidentMessage struct {
   Message string  `json:"message"`
 }
 
+const (
+  // Max duration since the last update on a resolved issue for us to ignore
+  // reopening it
+  MAX_UPDATE_AGE = time.Hour
+  // Max duration since a resolved issue was created for us to ignore reopening it
+  MAX_ISSUE_AGE = 3 * time.Hour
+)
+
+func (s *Status ) getIncident( bucket *bolt.Bucket, i *IncidentMessage ) (*Incident,error) {
+  response := &Incident{}
+
+  if bucket.GetJSON( i.Name, response ) {
+    log.Printf( "Found incident: %s - %s", response.Id, i.Name )
+
+    ok, err := s.get( "/api/v0/incidents/" + response.Id , response )
+    if !ok || err != nil {
+      return nil, err
+    }
+
+    // Get the most recent status
+    status := ""
+    if len(response.Updates) > 0 {
+      se := response.Updates[0]
+      for _, s := range response.Updates {
+        if s.Created.After( se.Created ) || s.Updated.After( se.Updated ) {
+          se = s
+        }
+      }
+      status = se.Status
+    }
+
+    if status == "Resolved" {
+      // If the issue is Resolved and the last update was yesterday, or it was
+      // created yesterday with it being resolved today then delete it locally
+      // so we will create a new issue.
+      now := time.Now().UTC()
+      updated := response.Updated.UTC()
+      created := response.Created.UTC()
+
+      if now.Sub( updated ) >= MAX_UPDATE_AGE || now.Sub( created ) >= MAX_ISSUE_AGE {
+        log.Printf( "Ignoring incident %s as too old", response.Id )
+        err = bucket.Delete( i.Name )
+        return nil, err
+      }
+    }
+
+    // Active incident
+    return response, nil
+  } else {
+    return nil, nil
+  }
+}
+
 // UpdateIncident updates our copy of an incident and either creates or updates
 // it on the Status page
 func (s *Status ) UpdateIncident( i *IncidentMessage ) error {
@@ -43,17 +96,18 @@ func (s *Status ) UpdateIncident( i *IncidentMessage ) error {
       return err
     }
 
-    response := &Incident{}
+    response, err := s.getIncident( bucket, i )
+    if err != nil {
+      return err
+    }
 
-    // Lookup the incident name
-    incident := &Incident{}
-    if bucket.GetJSON( i.Name, incident ) {
-      log.Printf( "Found incident: %s - %s", incident.Id, i.Name )
+    if response != nil {
+      log.Printf( "Updating incident: %s - %s", response.Id, i.Name )
 
       // Update the status, so no Title
       i.Title = ""
 
-      ok, err := s.patch( "/api/v0/incidents/" + incident.Id, i, response )
+      ok, err := s.patch( "/api/v0/incidents/" + response.Id, i, response )
       if err != nil {
         return err
       }
@@ -63,6 +117,8 @@ func (s *Status ) UpdateIncident( i *IncidentMessage ) error {
       }
     } else {
       log.Printf( "New incident: %s", i.Name )
+
+      response = &Incident{}
 
       ok, err := s.post( "/api/v0/incidents", i, response )
       if err != nil {

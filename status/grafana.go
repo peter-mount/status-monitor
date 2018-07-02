@@ -2,6 +2,7 @@ package status
 
 import (
   "github.com/peter-mount/golib/rest"
+  "log"
 )
 
 type GrafanaMessage struct {
@@ -52,6 +53,7 @@ func (s *Status) grafanaHandler( r *rest.Rest ) error {
 
   err = s.UpdateIncident( imsg )
   if err != nil {
+    log.Printf( "ERROR: %s", err )
     return err
   }
 

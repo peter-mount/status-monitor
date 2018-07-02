@@ -13,6 +13,7 @@ RUN apk add --no-cache \
 
 # Ensure we have the libraries - docker will cache these between builds
 RUN go get -v \
+      github.com/peter-mount/calculator/... \
       github.com/peter-mount/golib/... \
       gopkg.in/yaml.v2
 

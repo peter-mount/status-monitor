@@ -7,6 +7,11 @@ import (
   "net/http"
 )
 
+func (s *Status) get( path string, result interface{} ) ( bool, error ) {
+  b, err := s.sendToLamb( "GET", path, nil, result )
+  return b, err
+}
+
 func (s *Status) patch( path string, payload interface{}, result interface{} ) ( bool, error ) {
   b, err := s.sendToLamb( "PATCH", path, payload, result )
   return b, err
@@ -18,14 +23,24 @@ func (s *Status) post( path string, payload interface{}, result interface{} ) ( 
 }
 
 func (s *Status) sendToLamb( method, path string, payload interface{}, result interface{} ) ( bool, error ) {
-  post, err := json.Marshal( payload )
-  if err != nil {
-    return false, err
-  }
+  var req *http.Request
+  var err error
 
-  req, err := http.NewRequest( method, s.url + path, bytes.NewReader( post ) )
-  if err != nil {
-    return false, err
+  if payload == nil {
+    req, err = http.NewRequest( method, s.url + path, nil )
+    if err != nil {
+      return false, err
+    }
+  } else {
+    post, err := json.Marshal( payload )
+    if err != nil {
+      return false, err
+    }
+
+    req, err = http.NewRequest( method, s.url + path, bytes.NewReader( post ) )
+    if err != nil {
+      return false, err
+    }
   }
   req.Header.Add( "x-api-key", s.key )
   req.Header.Add( "Content-Type", "application/json" )

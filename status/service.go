@@ -6,9 +6,7 @@ import (
   "github.com/peter-mount/golib/kernel/bolt"
   "github.com/peter-mount/golib/kernel/cron"
   "github.com/peter-mount/golib/rest"
-  "log"
   "os"
-  "github.com/peter-mount/status-monitor/filter"
 )
 
 const (
@@ -29,14 +27,6 @@ func (s *Status) Name() string {
 }
 
 func (s *Status) Init( k *kernel.Kernel ) error {
-
-  parser := &filter.Parser{}
-  n, err := parser.Parse( "hour between 4 and 2")
-  if err != nil {
-    log.Println( err )
-  }
-  n.LogTree()
-  return fmt.Errorf( "test")
 
   s.url = os.Getenv( "STATUS_URL" )
   if s.url == "" {
